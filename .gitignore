@@ -17,7 +17,7 @@ coverage/
 public/static/
 
 # Environment variables
-# .env
+.env
 .env.*.local
 
 # OS generated files
