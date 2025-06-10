@@ -12,11 +12,11 @@ import flowRoutes from "./routes/flowRoutes.js";
 
 const app = express();
 
+app.set('trust proxy', 1);
 app.use(cors({ origin: "https://magbrain-frontend.vercel.app", credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
-app.set('trust proxy', 1);
 
 // app.use(
 //   session({
