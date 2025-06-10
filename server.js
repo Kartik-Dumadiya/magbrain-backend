@@ -3,7 +3,6 @@ import express from "express";
 import mongoose from "mongoose";
 import passport from "passport";
 import cookieParser from "cookie-parser";
-import session from "express-session";
 import cors from "cors";
 import authRoutes from "./routes/authRoutes.js";
 import "./config/passport.js";
@@ -14,12 +13,11 @@ const app = express();
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-// Set trust proxy for Railway/Heroku
 if (isProduction) app.set('trust proxy', 1);
 
 const allowedOrigins = isProduction
-  ? ["https://magbrain-frontend.vercel.app"]
-  : ["http://localhost:5173"]; // add your dev port if needed
+  ? [process.env.FRONTEND_ORIGIN]
+  : ["http://localhost:5173"];
 
 app.use(cors({
   origin: allowedOrigins,
@@ -29,26 +27,13 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "TOPSECRETWORD",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
-      maxAge: 24 * 60 * 60 * 1000,
-    },
-  })
-);
-
 app.use(passport.initialize());
-app.use(passport.session());
+// No express-session, no passport.session()
+
 app.use("/auth", authRoutes);
 app.use("/agents", agentRoutes);
 app.use("/flows", flowRoutes);
 
-// Error handling middleware
 app.use((err, req, res, next) => {
   console.error("Server error:", err.stack);
   res.status(500).json({ error: "Internal server error" });

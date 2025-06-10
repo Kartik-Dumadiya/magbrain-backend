@@ -2,8 +2,18 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
-const generateToken = (user) => {
-  return jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+const isProduction = process.env.NODE_ENV === "production";
+
+// JWT generator
+const generateToken = (user) =>
+  jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+
+// Helper: cookie options
+const cookieOptions = {
+  httpOnly: true,
+  sameSite: isProduction ? "none" : "lax",
+  secure: isProduction,
+  maxAge: 24 * 60 * 60 * 1000,
 };
 
 export const signup = async (req, res) => {
@@ -13,17 +23,20 @@ export const signup = async (req, res) => {
 
   try {
     const exists = await User.findOne({ email });
-    if (exists)
-      return res.status(400).json({ error: "User already exists" });
+    if (exists) return res.status(400).json({ error: "User already exists" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({ name, email, password: hashedPassword });
     const token = generateToken(user);
 
     res
-      .cookie("token", token, { httpOnly: true, sameSite: "lax" })
+      .cookie("token", token, cookieOptions)
       .status(201)
-      .json({ message: "User created successfully", user: { name: user.name, email: user.email }, token });
+      .json({
+        message: "User created successfully",
+        user: { name: user.name, email: user.email },
+        token,
+      });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -41,7 +54,7 @@ export const login = async (req, res) => {
     }
     const token = generateToken(user);
     res
-      .cookie("token", token, { httpOnly: true, sameSite: "lax" })
+      .cookie("token", token, cookieOptions)
       .status(200)
       .json({ message: "Login successful", token });
   } catch (err) {
@@ -50,31 +63,25 @@ export const login = async (req, res) => {
 };
 
 export const logout = (req, res) => {
-  // Provide the same options as when you set the cookie
-  res.clearCookie("token", { httpOnly: true, sameSite: "lax" });
-  // If using session-based passport, uncomment next line
-  // req.logout && req.logout();
+  res.clearCookie("token", cookieOptions);
   res.status(200).json({ message: "Logout successful" });
 };
 
 export const oauthSuccess = (req, res) => {
   if (!req.user) {
-    return res.redirect("http://localhost:5173/signin?oauth=fail");
+    return res.redirect(`${process.env.FRONTEND_ORIGIN}/signin?oauth=fail`);
   }
   const token = generateToken(req.user);
-  res.cookie("token", token, { httpOnly: true, sameSite: "lax" });
-  res.redirect("http://localhost:5173/agents?oauth=success");
+  res.cookie("token", token, cookieOptions);
+  res.redirect(`${process.env.FRONTEND_ORIGIN}/agents?oauth=success`);
 };
 
 export const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
-    // Determine provider
     let provider = "local";
     if (user.googleId) provider = "google";
     else if (user.githubId) provider = "github";
-    else if (user.dropboxId) provider = "dropbox";
-    // Send provider in user object
     res.json({ user: { ...user.toObject(), provider } });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -102,7 +109,8 @@ export const updatePassword = async (req, res) => {
 
   try {
     const user = await User.findById(req.user.id);
-    if (!user.password) return res.status(400).json({ error: "Password cannot be changed for social logins." });
+    if (!user.password)
+      return res.status(400).json({ error: "Password cannot be changed for social logins." });
     const isMatch = await bcrypt.compare(oldPassword, user.password);
     if (!isMatch) return res.status(400).json({ error: "Old password is incorrect." });
 
