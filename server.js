@@ -12,22 +12,20 @@ import flowRoutes from "./routes/flowRoutes.js";
 
 const app = express();
 
-const isProduction = process.env.NODE_ENV === 'production';
-const allowedOrigins = process.env.FRONTEND_ORIGIN
-  ? process.env.FRONTEND_ORIGIN.split(',')
-  : ["http://localhost:5173"];
-
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true,
-}));
-
+app.use(cors({ origin: "https://magbrain-frontend.vercel.app", credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
-if (isProduction) {
-  app.set('trust proxy', 1);
-}
+app.set('trust proxy', 1);
+
+// app.use(
+//   session({
+//     secret: process.env.SESSION_SECRET || "TOPSECRETWORD",
+//     resave: false,
+//     saveUninitialized: false,
+//     cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 },
+//   })
+// );
 
 app.use(
   session({
@@ -35,8 +33,8 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
+      secure: true,
+      sameSite: 'none',
       maxAge: 24 * 60 * 60 * 1000,
     },
   })
