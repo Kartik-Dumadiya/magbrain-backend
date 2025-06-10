@@ -12,7 +12,7 @@ import flowRoutes from "./routes/flowRoutes.js";
 
 const app = express();
 
-app.use(cors({ origin: "https://magbrain-frontend.vercel.app/", credentials: true }));
+app.use(cors({ origin: "https://magbrain-frontend.vercel.app", credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 app.use(
@@ -40,7 +40,7 @@ mongoose
   .then(() => console.log("Connected to MongoDB"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
