@@ -12,20 +12,22 @@ import flowRoutes from "./routes/flowRoutes.js";
 
 const app = express();
 
-app.set('trust proxy', 1);
-app.use(cors({ origin: "https://magbrain-frontend.vercel.app", credentials: true }));
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Set trust proxy for Railway/Heroku
+if (isProduction) app.set('trust proxy', 1);
+
+const allowedOrigins = isProduction
+  ? ["https://magbrain-frontend.vercel.app"]
+  : ["http://localhost:5173"]; // add your dev port if needed
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+}));
+
 app.use(express.json());
 app.use(cookieParser());
-
-
-// app.use(
-//   session({
-//     secret: process.env.SESSION_SECRET || "TOPSECRETWORD",
-//     resave: false,
-//     saveUninitialized: false,
-//     cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 },
-//   })
-// );
 
 app.use(
   session({
@@ -33,8 +35,8 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: true,
-      sameSite: 'none',
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
       maxAge: 24 * 60 * 60 * 1000,
     },
   })
