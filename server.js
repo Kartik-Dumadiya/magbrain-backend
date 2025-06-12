@@ -17,7 +17,7 @@ if (isProduction) app.set('trust proxy', 1);
 
 const allowedOrigins = isProduction
   ? [process.env.FRONTEND_ORIGIN]
-  : ["http://localhost:5173"];
+  : ["https://magbrain-frontend.vercel.app/"];
 
 app.use(cors({
   origin: allowedOrigins,
